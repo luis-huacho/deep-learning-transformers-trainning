@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fine-tuning y Técnicas de Adaptación</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .slideshow-container {
+            position: relative;
+            max-width: 100%;
+            margin: auto;
+            min-height: 100vh;
+        }
+
+        .slide {
+            display: none;
+            padding: 40px;
+            background: white;
+            margin: 20px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            min-height: calc(100vh - 40px);
+        }
+
+        .slide.active {
+            display: block;
+            animation: slideIn 0.5s ease-in-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        h1 {
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        h3 {
+            color: #4a5568;
+            margin: 20px 0 10px 0;
+            font-size: 1.3em;
+        }
+
+        .architecture-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .model-box {
+            background: linear-gradient(145deg, #f7fafc, #edf2f7);
+            border: 2px solid #cbd5e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: 150px;
+        }
+
+        .frozen {
+            background: linear-gradient(145deg, #e2e8f0, #cbd5e0);
+            border-color: #718096;
+        }
+
+        .trainable {
+            background: linear-gradient(145deg, #fed7d7, #feb2b2);
+            border-color: #e53e3e;
+        }
+
+        .new-layer {
+            background: linear-gradient(145deg, #c6f6d5, #9ae6b4);
+            border-color: #38a169;
+        }
+
+        .arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 0 15px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .pros, .cons {
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .pros {
+            background: linear-gradient(145deg, #c6f6d5, #9ae6b4);
+            border-left: 5px solid #38a169;
+        }
+
+        .cons {
+            background: linear-gradient(145deg, #fed7d7, #feb2b2);
+            border-left: 5px solid #e53e3e;
+        }
+
+        .navigation {
+            text-align: center;
+            margin: 20px;
+        }
+
+        .nav-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .slide-counter {
+            text-align: center;
+            color: #718096;
+            margin: 10px 0;
+        }
+
+        .architecture-flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .layer-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .layer {
+            width: 80px;
+            height: 40px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .lora-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .matrix {
+            background: #f7fafc;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .plus {
+            font-size: 2em;
+            color: #667eea;
+        }
+
+        .highlight {
+            background: linear-gradient(145deg, #fef5e7, #fed7aa);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #ed8936;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="slideshow-container">
+        <!-- Slide 1: Título -->
+        <div class="slide active">
+            <h1>🤖 Fine-tuning y Técnicas de Adaptación de Modelos</h1>
+            <div style="text-align: center; margin: 50px 0;">
+                <div style="font-size: 1.5em; color: #4a5568; margin-bottom: 30px;">
+                    Una guía didáctica sobre:
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin: 40px 0;">
+                    <div class="model-box new-layer">
+                        <h3>Fine-tuning</h3>
+                        <p>Ajuste completo del modelo</p>
+                    </div>
+                    <div class="model-box trainable">
+                        <h3>Transfer Learning</h3>
+                        <p>Reutilización de conocimiento</p>
+                    </div>
+                    <div class="model-box frozen">
+                        <h3>LoRA</h3>
+                        <p>Adaptación eficiente</p>
+                    </div>
+                    <div class="model-box new-layer">
+                        <h3>QLoRA</h3>
+                        <p>LoRA cuantizado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Fine-tuning -->
+        <div class="slide">
+            <h2>🎯 Fine-tuning (Ajuste Fino)</h2>
+            
+            <div class="highlight">
+                <strong>Definición:</strong> Tomar un modelo preentrenado y continuar entrenándolo en una tarea específica, ajustando TODOS sus parámetros.
+            </div>
+
+            <div class="architecture-diagram">
+                <div class="model-box frozen">Modelo<br>Preentrenado<br>🧠</div>
+                <div class="arrow">→</div>
+                <div class="model-box trainable">Modelo<br>Fine-tuned<br>🎯</div>
+            </div>
+
+            <h3>🔧 Cómo funciona:</h3>
+            <div class="architecture-flow">
+                <div class="layer-group">
+                    <div class="layer trainable">Capa 1</div>
+                    <div class="layer trainable">Capa 2</div>
+                    <div class="layer trainable">Capa 3</div>
+                    <div class="layer trainable">...</div>
+                    <div class="layer trainable">Capa N</div>
+                </div>
+                <p style="text-align: center; color: #e53e3e; font-weight: bold;">
+                    ⚠️ TODAS las capas se actualizan durante el entrenamiento
+                </p>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h3>✅ Ventajas:</h3>
+                    <ul>
+                        <li>Máximo rendimiento posible</li>
+                        <li>Adaptación completa a la tarea</li>
+                        <li>Control total sobre el modelo</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h3>❌ Desventajas:</h3>
+                    <ul>
+                        <li>Muy costoso computacionalmente</li>
+                        <li>Requiere mucha memoria</li>
+                        <li>Riesgo de overfitting</li>
+                        <li>Lento de entrenar</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Transfer Learning -->
+        <div class="slide">
+            <h2>🔄 Transfer Learning Parcial</h2>
+            
+            <div class="highlight">
+                <strong>Definición:</strong> Congelar algunas capas del modelo preentrenado y entrenar solo las capas finales, a menudo añadiendo nuevas capas específicas para la tarea.
+            </div>
+
+            <div class="architecture-flow">
+                <div class="layer-group">
+                    <div class="layer frozen">Capa 1</div>
+                    <div class="layer frozen">Capa 2</div>
+                    <div class="layer frozen">Capa 3</div>
+                    <div class="layer trainable">Capa 4</div>
+                    <div class="layer new-layer">Nueva Capa</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; width: 100%; max-width: 500px; font-size: 12px; margin-top: 10px;">
+                    <span style="color: #718096;">🔒 Congeladas</span>
+                    <span style="color: #e53e3e;">🔓 Entrenable</span>
+                    <span style="color: #38a169;">🆕 Nueva</span>
+                </div>
+            </div>
+
+            <h3>📚 Estrategias comunes:</h3>
+            <table class="comparison-table">
+                <tr>
+                    <th>Estrategia</th>
+                    <th>Descripción</th>
+                    <th>Cuándo usar</th>
+                </tr>
+                <tr>
+                    <td><strong>Feature Extraction</strong></td>
+                    <td>Solo entrenar la capa clasificadora</td>
+                    <td>Pocos datos, tarea similar</td>
+                </tr>
+                <tr>
+                    <td><strong>Fine-tuning Parcial</strong></td>
+                    <td>Entrenar últimas capas + nuevas</td>
+                    <td>Datos moderados, tarea relacionada</td>
+                </tr>
+                <tr>
+                    <td><strong>Gradual Unfreezing</strong></td>
+                    <td>Descongelar capas progresivamente</td>
+                    <td>Muchos datos, control fino</td>
+                </tr>
+            </table>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h3>✅ Ventajas:</h3>
+                    <ul>
+                        <li>Más eficiente que fine-tuning completo</li>
+                        <li>Menos riesgo de overfitting</li>
+                        <li>Entrena más rápido</li>
+                        <li>Funciona con menos datos</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h3>❌ Desventajas:</h3>
+                    <ul>
+                        <li>Menor flexibilidad</li>
+                        <li>Rendimiento limitado por capas congeladas</li>
+                        <li>Requiere decidir qué congelar</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: LoRA -->
+        <div class="slide">
+            <h2>🎪 LoRA (Low-Rank Adaptation)</h2>
+            
+            <div class="highlight">
+                <strong>Definición:</strong> En lugar de actualizar todos los pesos, LoRA añade matrices pequeñas de bajo rango que se suman a los pesos originales. ¡El modelo original nunca cambia!
+            </div>
+
+            <h3>🧮 Arquitectura LoRA:</h3>
+            <div class="lora-diagram">
+                <div class="matrix frozen">
+                    Matriz Original<br>
+                    W<br>
+                    <small>(n × m)</small><br>
+                    🔒 Congelada
+                </div>
+                <div class="plus">+</div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="matrix trainable">
+                        A<br>
+                        <small>(n × r)</small>
+                    </div>
+                    <div style="font-size: 1.5em; color: #667eea;">×</div>
+                    <div class="matrix trainable">
+                        B<br>
+                        <small>(r × m)</small>
+                    </div>
+                </div>
+                <div class="plus">=</div>
+                <div class="matrix new-layer">
+                    W + AB<br>
+                    <small>Matriz Final</small>
+                </div>
+            </div>
+
+            <div style="text-align: center; background: #f0f4f8; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                <strong>Fórmula clave:</strong> W' = W + AB<br>
+                <small>donde r &lt;&lt; min(n,m) (rango muy bajo)</small>
+            </div>
+
+            <h3>💡 ¿Por qué funciona?</h3>
+            <div style="background: #e6fffa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <ul>
+                    <li><strong>Hipótesis:</strong> Los cambios necesarios tienen baja dimensionalidad intrínseca</li>
+                    <li><strong>Ejemplo:</strong> Si W es 1000×1000, en lugar de entrenar 1M parámetros, LoRA puede usar matrices de 1000×8 y 8×1000 = solo 16K parámetros</li>
+                    <li><strong>Resultado:</strong> 98% menos parámetros a entrenar!</li>
+                </ul>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h3>✅ Ventajas:</h3>
+                    <ul>
+                        <li>Súper eficiente (1-2% de parámetros)</li>
+                        <li>Entrenamientos rápidos</li>
+                        <li>Fácil de almacenar y compartir</li>
+                        <li>Múltiples adaptadores por modelo</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h3>❌ Desventajas:</h3>
+                    <ul>
+                        <li>Rendimiento algo menor que fine-tuning</li>
+                        <li>Requiere elegir el rango r</li>
+                        <li>No siempre funciona igual de bien</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: QLoRA -->
+        <div class="slide">
+            <h2>⚡ QLoRA (Quantized LoRA)</h2>
+            
+            <div class="highlight">
+                <strong>Definición:</strong> QLoRA = LoRA + Cuantización. Reduce el modelo base a 4 bits, pero mantiene los adaptadores LoRA en 16 bits para preservar la calidad del entrenamiento.
+            </div>
+
+            <div class="architecture-diagram">
+                <div class="model-box frozen" style="background: linear-gradient(145deg, #e8f4f8, #bee3f8);">
+                    Modelo Base<br>
+                    Cuantizado<br>
+                    4-bit<br>
+                    💾 Menos memoria
+                </div>
+                <div class="arrow">+</div>
+                <div class="model-box trainable">
+                    Adaptadores<br>
+                    LoRA<br>
+                    16-bit<br>
+                    🎯 Alta precisión
+                </div>
+            </div>
+
+            <h3>🔧 Innovaciones técnicas de QLoRA:</h3>
+            <table class="comparison-table">
+                <tr>
+                    <th>Técnica</th>
+                    <th>Descripción</th>
+                    <th>Beneficio</th>
+                </tr>
+                <tr>
+                    <td><strong>4-bit NormalFloat</strong></td>
+                    <td>Cuantización optimizada para distribuciones normales</td>
+                    <td>Mejor calidad que int4 estándar</td>
+                </tr>
+                <tr>
+                    <td><strong>Double Quantization</strong></td>
+                    <td>Cuantiza también los valores de cuantización</td>
+                    <td>Ahorra memoria adicional</td>
+                </tr>
+                <tr>
+                    <td><strong>Paged Optimizers</strong></td>
+                    <td>Usa memoria virtual para estados del optimizador</td>
+                    <td>Maneja picos de memoria</td>
+                </tr>
+            </table>
+
+            <h3>📊 Comparación de uso de memoria:</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0;">
+                <div class="model-box trainable">
+                    <strong>Fine-tuning</strong><br>
+                    Llama 7B<br>
+                    ~80 GB
+                </div>
+                <div class="model-box frozen">
+                    <strong>LoRA</strong><br>
+                    Llama 7B<br>
+                    ~40 GB
+                </div>
+                <div class="model-box new-layer">
+                    <strong>QLoRA</strong><br>
+                    Llama 7B<br>
+                    ~12 GB
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h3>✅ Ventajas:</h3>
+                    <ul>
+                        <li>Memoria mínima (75% menos que LoRA)</li>
+                        <li>Permite entrenar modelos grandes en GPU consumer</li>
+                        <li>Mantiene calidad cercana a fine-tuning</li>
+                        <li>Democratiza el entrenamiento</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h3>❌ Desventajas:</h3>
+                    <ul>
+                        <li>Más complejo de implementar</li>
+                        <li>Ligeramente más lento por cuantización</li>
+                        <li>Requiere hardware compatible</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Comparación -->
+        <div class="slide">
+            <h2>⚖️ Comparación de Técnicas</h2>
+            
+            <table class="comparison-table">
+                <tr>
+                    <th>Técnica</th>
+                    <th>Parámetros Entrenables</th>
+                    <th>Memoria Requerida</th>
+                    <th>Tiempo de Entrenamiento</th>
+                    <th>Rendimiento</th>
+                    <th>Casos de Uso</th>
+                </tr>
+                <tr>
+                    <td><strong>Fine-tuning</strong></td>
+                    <td>100%</td>
+                    <td>Muy alta</td>
+                    <td>Muy lento</td>
+                    <td>Excelente</td>
+                    <td>Máximo rendimiento, recursos ilimitados</td>
+                </tr>
+                <tr>
+                    <td><strong>Transfer Learning</strong></td>
+                    <td>10-50%</td>
+                    <td>Alta</td>
+                    <td>Moderado</td>
+                    <td>Muy bueno</td>
+                    <td>Tareas relacionadas, datos limitados</td>
+                </tr>
+                <tr>
+                    <td><strong>LoRA</strong></td>
+                    <td>1-2%</td>
+                    <td>Media</td>
+                    <td>Rápido</td>
+                    <td>Bueno</td>
+                    <td>Múltiples adaptaciones, eficiencia</td>
+                </tr>
+                <tr>
+                    <td><strong>QLoRA</strong></td>
+                    <td>1-2%</td>
+                    <td>Muy baja</td>
+                    <td>Rápido</td>
+                    <td>Bueno</td>
+                    <td>Recursos limitados, GPU consumer</td>
+                </tr>
+            </table>
+
+            <h3>🎯 Guía de decisión:</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px 0;">
+                <div style="background: #f0fff4; padding: 20px; border-radius: 10px; border-left: 5px solid #38a169;">
+                    <h4>🟢 Usa Fine-tuning cuando:</h4>
+                    <ul>
+                        <li>Necesitas el máximo rendimiento</li>
+                        <li>Tienes recursos computacionales abundantes</li>
+                        <li>La tarea es muy específica</li>
+                    </ul>
+                </div>
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; border-left: 5px solid #3182ce;">
+                    <h4>🔵 Usa Transfer Learning cuando:</h4>
+                    <ul>
+                        <li>La tarea es similar al preentrenamiento</li>
+                        <li>Tienes pocos datos</li>
+                        <li>Quieres balance eficiencia/rendimiento</li>
+                    </ul>
+                </div>
+                <div style="background: #fffaf0; padding: 20px; border-radius: 10px; border-left: 5px solid #ed8936;">
+                    <h4>🟡 Usa LoRA cuando:</h4>
+                    <ul>
+                        <li>Necesitas múltiples adaptaciones</li>
+                        <li>Quieres compartir modelos fácilmente</li>
+                        <li>Eficiencia es prioritaria</li>
+                    </ul>
+                </div>
+                <div style="background: #fdf2f8; padding: 20px; border-radius: 10px; border-left: 5px solid #d53f8c;">
+                    <h4>🟣 Usa QLoRA cuando:</h4>
+                    <ul>
+                        <li>Tienes recursos muy limitados</li>
+                        <li>Quieres entrenar modelos grandes localmente</li>
+                        <li>GPU consumer (RTX 4090, etc.)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: ¿Solo Transformers? -->
+        <div class="slide">
+            <h2>🤔 ¿Solo se usan en Transformers?</h2>
+            
+            <div class="highlight">
+                <strong>Respuesta corta:</strong> ¡No! Aunque son más populares en Transformers, estas técnicas se pueden aplicar a diferentes arquitecturas.
+            </div>
+
+            <h3>🏗️ Aplicabilidad por arquitectura:</h3>
+            <table class="comparison-table">
+                <tr>
+                    <th>Arquitectura</th>
+                    <th>Fine-tuning</th>
+                    <th>Transfer Learning</th>
+                    <th>LoRA</th>
+                    <th>QLoRA</th>
+                    <th>Notas</th>
+                </tr>
+                <tr>
+                    <td><strong>CNNs</strong></td>
+                    <td>✅ Muy común</td>
+                    <td>✅ Estándar</td>
+                    <td>✅ Posible</td>
+                    <td>✅ Experimental</td>
+                    <td>Transfer learning nació aquí (ImageNet)</td>
+                </tr>
+                <tr>
+                    <td><strong>RNNs/LSTMs</strong></td>
+                    <td>✅ Común</td>
+                    <td>✅ Común</td>
+                    <td>⚠️ Limitado</td>
+                    <td>⚠️ Limitado</td>
+                    <td>LoRA menos efectivo por estructura secuencial</td>
+                </tr>
+                <tr>
+                    <td><strong>Transformers</strong></td>
+                    <td>✅ Estándar</td>
+                    <td>✅ Muy común</td>
+                    <td>✅ Óptimo</td>
+                    <td>✅ Óptimo</td>
+                    <td>Donde LoRA/QLoRA brillan más</td>
+                </tr>
+                <tr>
+                    <td><strong>Vision Transformers</strong></td>
+                    <td>✅ Común</td>
+                    <td>✅ Común</td>
+                    <td>✅ Efectivo</td>
+                    <td>✅ Emergente</td>
+                    <td>Aplicación natural de técnicas de Transformers</td>
+                </tr>
+                <tr>
+                    <td><strong>Diffusion Models</strong></td>
+                    <td>✅ Común</td>
+                    <td>✅ Común</td>
+                    <td>✅ Popular</td>
+                    <td>✅ Creciente</td>
+                    <td>LoRA muy popular para Stable Diffusion</td>
+                </tr>
+            </table>
+
+            <h3>🌟 ¿Por qué Transformers son especiales para LoRA?</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0;">
+                <div style="background: #e6fffa; padding: 15px; border-radius: 10px;">
+                    <h4>🎯 Ventajas en Transformers:</h4>
+                    <ul>
+                        <li><strong>Attention matrices:</strong> Naturalmente de bajo rango</li>
+                        <li><strong>Estructura modular:</strong> Fácil aplicar por capa</li>
+                        <li><strong>Escalabilidad:</strong> Funciona en modelos gigantes</li>
+                        <li><strong>Múltiples componentes:</strong> Q, K, V, proyecciones</li>
+                    </ul>
+                </div>
+                <div style="background: #fff5f5; padding: 15px; border-radius: 10px;">
+                    <h4>⚠️ Limitaciones en otras arquitecturas:</h4>
+                    <ul>
+                        <li><strong>CNNs:</strong> Convoluciones pueden no ser bajo rango</li>
+                        <li><strong>RNNs:</strong> Dependencias temporales complejas</li>
+                        <li><strong>Estructuras irregulares:</strong> Difícil generalizar</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <strong>Conclusión:</strong> Aunque estas técnicas se pueden usar en cualquier red neuronal, LoRA y QLoRA han encontrado su nicho óptimo en Transformers debido a su estructura matricial y propiedades de bajo rango inherentes.
+            </div>
+        </div>
+
+        <!-- Slide 8: Consejos Prácticos -->
+        <div class="slide">
+            <h2>💡 Consejos Prácticos</h2>
+            
+            <h3>🎯 Selección de técnica según tu caso:</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0;">
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; border-left: 5px solid #3182ce;">
+                    <h4>📊 Tienes pocos datos (&lt;1000 ejemplos)</h4>
+                    <ul>
+                        <li>✅ <strong>Transfer Learning</strong> con feature extraction</li>
+                        <li>⚠️ Evita fine-tuning completo (overfitting)</li>
+                        <li>🎯 Considera data augmentation</li>
+                    </ul>
+                </div>
+                <div style="background: #f0fff4; padding: 20px; border-radius: 10px; border-left: 5px solid #38a169;">
+                    <h4>💾 Recursos limitados (GPU &lt;16GB)</h4>
+                    <ul>
+                        <li>✅ <strong>QLoRA</strong> es tu mejor amigo</li>
+                        <li>✅ Considera gradient checkpointing</li>
+                        <li>🎯 Batch size pequeño + gradient accumulation</li>
+                    </ul>
+                </div>
+                <div style="background: #fffaf0; padding: 20px; border-radius: 10px; border-left: 5px solid #ed8936;">
+                    <h4>⚡ Necesitas velocidad de desarrollo</h4>
+                    <ul>
+                        <li>✅ <strong>LoRA</strong> para iteración rápida</li>
+                        <li>✅ Usa modelos pre-configurados (Hugging Face)</li>
+                        <li>🎯 Herramientas como Axolotl o Unsloth</li>
+                    </ul>
+                </div>
+                <div style="background: #fdf2f8; padding: 20px; border-radius: 10px; border-left: 5px solid #d53f8c;">
+                    <h4>🏆 Máximo rendimiento sin límites</h4>
+                    <ul>
+                        <li>✅ <strong>Fine-tuning completo</strong></li>
+                        <li>✅ Considera múltiples etapas de entrenamiento</li>
+                        <li>🎯 Usa clusters o cloud computing</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>⚙️ Hiperparámetros importantes:</h3>
+            <table class="comparison-table">
+                <tr>
+                    <th>Técnica</th>
+                    <th>Learning Rate</th>
+                    <th>Parámetros clave</th>
+                    <th>Tips</th>
+                </tr>
+                <tr>
+                    <td><strong>Fine-tuning</strong></td>
+                    <td>1e-5 a 5e-5</td>
+                    <td>Warmup, weight decay</td>
+                    <td>LR más bajo que preentrenamiento</td>
+                </tr>
+                <tr>
+                    <td><strong>Transfer Learning</strong></td>
+                    <td>1e-4 a 1e-3</td>
+                    <td>Freeze schedule</td>
+                    <td>LR más alto para capas nuevas</td>
+                </tr>
+                <tr>
+                    <td><strong>LoRA</strong></td>
+                    <td>1e-4 a 3e-4</td>
+                    <td>r=8-64, α=16-32</td>
+                    <td>α controla magnitud de adaptación</td>
+                </tr>
+                <tr>
+                    <td><strong>QLoRA</strong></td>
+                    <td>1e-4 a 2e-4</td>
+                    <td>r=16-64, α=32</td>
+                    <td>Puede necesitar LR ligeramente menor</td>
+                </tr>
+            </table>
+
+            <h3>🛠️ Herramientas recomendadas:</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0;">
+                <div class="model-box new-layer">
+                    <h4>🤗 Hugging Face</h4>
+                    <p>PEFT, Transformers, Datasets</p>
+                    <small>Ecosistema completo</small>
+                </div>
+                <div class="model-box trainable">
+                    <h4>⚡ Unsloth</h4>
+                    <p>Entrenamiento 2-5x más rápido</p>
+                    <small>Optimizado para LoRA/QLoRA</small>
+                </div>
+                <div class="model-box frozen">
+                    <h4>🔧 Axolotl</h4>
+                    <p>Configuración YAML simple</p>
+                    <small>Para principiantes</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Casos de Uso Reales -->
+        <div class="slide">
+            <h2>🌍 Casos de Uso Reales</h2>
+            
+            <h3>💬 Modelos de Lenguaje (LLMs):</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0;">
+                <div style="background: #e6fffa; padding: 15px; border-radius: 10px;">
+                    <h4>🎯 Fine-tuning Completo:</h4>
+                    <ul>
+                        <li><strong>GPT-4 Turbo</strong> → Modelos especializados</li>
+                        <li><strong>Llama 2</strong> → Code Llama</li>
+                        <li><strong>Claude</strong> → Versiones específicas</li>
+                    </ul>
+                </div>
+                <div style="background: #fff5f5; padding: 15px; border-radius: 10px;">
+                    <h4>⚡ LoRA/QLoRA:</h4>
+                    <ul>
+                        <li><strong>Alpaca</strong> (Stanford) con LoRA</li>
+                        <li><strong>Vicuna</strong> entrenada con QLoRA</li>
+                        <li><strong>Adaptadores personalizados</strong> en Hugging Face</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🎨 Generación de Imágenes:</h3>
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h4>Stable Diffusion + LoRA:</h4>
+                <ul>
+                    <li><strong>Estilos artísticos:</strong> Anime, realismo, cartoon</li>
+                    <li><strong>Personajes específicos:</strong> Entrenar con pocas imágenes</li>
+                    <li><strong>Conceptos nuevos:</strong> Objetos, poses, escenarios</li>
+                    <li><strong>Tamaño típico:</strong> 10-100MB vs 4GB del modelo base</li>
+                </ul>
+            </div>
+
+            <h3>🏢 Aplicaciones Empresariales:</h3>
+            <table class="comparison-table">
+                <tr>
+                    <th>Industria</th>
+                    <th>Caso de Uso</th>
+                    <th>Técnica Típica</th>
+                    <th>Por qué</th>
+                </tr>
+                <tr>
+                    <td><strong>Finanzas</strong></td>
+                    <td>Análisis de sentimientos en noticias</td>
+                    <td>LoRA</td>
+                    <td>Múltiples mercados, actualizaciones frecuentes</td>
+                </tr>
+                <tr>
+                    <td><strong>Salud</strong></td>
+                    <td>Procesamiento de reportes médicos</td>
+                    <td>Fine-tuning</td>
+                    <td>Privacidad, regulaciones estrictas</td>
+                </tr>
+                <tr>
+                    <td><strong>Legal</strong></td>
+                    <td>Análisis de contratos</td>
+                    <td>Transfer Learning</td>
+                    <td>Dominio específico, datos limitados</td>
+                </tr>
+                <tr>
+                    <td><strong>E-commerce</strong></td>
+                    <td>Chatbots de atención al cliente</td>
+                    <td>QLoRA</td>
+                    <td>Múltiples marcas, recursos limitados</td>
+                </tr>
+            </table>
+
+            <h3>📈 Tendencias actuales (2025):</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0;">
+                <div style="background: #f0fff4; padding: 15px; border-radius: 10px; border-left: 5px solid #38a169;">
+                    <h4>🔥 En auge:</h4>
+                    <ul>
+                        <li><strong>QLoRA</strong> democratizando LLMs grandes</li>
+                        <li><strong>Multi-LoRA:</strong> Múltiples adaptadores simultáneos</li>
+                        <li><strong>LoRA para multimodal:</strong> Texto + imágenes</li>
+                    </ul>
+                </div>
+                <div style="background: #fffaf0; padding: 15px; border-radius: 10px; border-left: 5px solid #ed8936;">
+                    <h4>🔬 Investigación activa:</h4>
+                    <ul>
+                        <li><strong>AdaLoRA:</strong> Rangos adaptativos</li>
+                        <li><strong>LoRA+:</strong> Mejoras en inicialización</li>
+                        <li><strong>DoRA:</strong> Descomposición peso-dirección</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Resumen -->
+        <div class="slide">
+            <h2>📝 Resumen y Takeaways</h2>
+            
+            <div class="highlight">
+                <h3>🎯 Mensaje clave:</h3>
+                <p>No existe una técnica "mejor" - todo depende de tu contexto: datos disponibles, recursos computacionales, tiempo, y objetivos de rendimiento.</p>
+            </div>
+
+            <h3>📊 Escalera de eficiencia vs rendimiento:</h3>
+            <div style="display: flex; justify-content: center; align-items: end; gap: 20px; margin: 30px 0; height: 300px;">
+                <div style="background: linear-gradient(to top, #fed7d7, #feb2b2); width: 80px; height: 250px; border-radius: 10px 10px 0 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 10px; color: #2d3748;">
+                    <span style="font-size: 12px; text-align: center; font-weight: bold;">Máximo Rendimiento</span>
+                    <span style="font-size: 14px; font-weight: bold;">Fine-tuning</span>
+                    <span style="font-size: 10px;">💰💰💰</span>
+                </div>
+                <div style="background: linear-gradient(to top, #fbb6ce, #f687b3); width: 80px; height: 200px; border-radius: 10px 10px 0 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 10px; color: #2d3748;">
+                    <span style="font-size: 12px; text-align: center; font-weight: bold;">Balance</span>
+                    <span style="font-size: 14px; font-weight: bold;">Transfer Learning</span>
+                    <span style="font-size: 10px;">💰💰</span>
+                </div>
+                <div style="background: linear-gradient(to top, #c6f6d5, #9ae6b4); width: 80px; height: 150px; border-radius: 10px 10px 0 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 10px; color: #2d3748;">
+                    <span style="font-size: 12px; text-align: center; font-weight: bold;">Eficiente</span>
+                    <span style="font-size: 14px; font-weight: bold;">LoRA</span>
+                    <span style="font-size: 10px;">💰</span>
+                </div>
+                <div style="background: linear-gradient(to top, #bee3f8, #90cdf4); width: 80px; height: 100px; border-radius: 10px 10px 0 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 10px; color: #2d3748;">
+                    <span style="font-size: 12px; text-align: center; font-weight: bold;">Máxima Eficiencia</span>
+                    <span style="font-size: 14px; font-weight: bold;">QLoRA</span>
+                    <span style="font-size: 10px;">💰</span>
+                </div>
+            </div>
+
+            <h3>🚀 Próximos pasos recomendados:</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0;">
+                <div style="background: #e6fffa; padding: 20px; border-radius: 10px;">
+                    <h4>👶 Si eres principiante:</h4>
+                    <ol>
+                        <li>Empieza con <strong>Transfer Learning</strong> en CNNs</li>
+                        <li>Prueba <strong>LoRA</strong> con Hugging Face PEFT</li>
+                        <li>Experimenta con <strong>QLoRA</strong> usando Unsloth</li>
+                        <li>Lee papers originales para entender teoría</li>
+                    </ol>
+                </div>
+                <div style="background: #fff5f5; padding: 20px; border-radius: 10px;">
+                    <h4>🥷 Si tienes experiencia:</h4>
+                    <ol>
+                        <li>Implementa <strong>Multi-LoRA</strong> systems</li>
+                        <li>Experimenta con <strong>rangos adaptativos</strong></li>
+                        <li>Prueba <strong>técnicas híbridas</strong></li>
+                        <li>Contribuye a <strong>research</strong> en el área</li>
+                    </ol>
+                </div>
+            </div>
+
+            <h3>📚 Recursos adicionales:</h3>
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <ul>
+                    <li><strong>Papers:</strong> LoRA (2021), QLoRA (2023), AdaLoRA (2023)</li>
+                    <li><strong>Código:</strong> Hugging Face PEFT, Microsoft LoRA, bitsandbytes</li>
+                    <li><strong>Cursos:</strong> Fast.ai, Hugging Face Course, DeepLearning.ai</li>
+                    <li><strong>Comunidades:</strong> Reddit r/MachineLearning, Discord de Hugging Face</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; margin: 30px 0;">
+                <h2>🎉 ¡Gracias por tu atención!</h2>
+                <p style="font-size: 1.2em; margin-top: 15px;">
+                    ¿Preguntas? ¡Es hora de experimentar! 🚀
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" onclick="changeSlide(-1)">← Anterior</button>
+        <button class="nav-btn" onclick="changeSlide(1)">Siguiente →</button>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">10</span>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('total-slides').textContent = totalSlides;
+        
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+        }
+        
+        function changeSlide(direction) {
+            showSlide(currentSlide + direction);
+        }
+        
+        // Navegación con teclado
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+        
+        // Navegación con clics
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.nav-btn')) return;
+            if (e.clientX > window.innerWidth / 2) {
+                changeSlide(1);
+            } else {
+                changeSlide(-1);
+            }
+        });
+    </script>
+</body>
+</html>
